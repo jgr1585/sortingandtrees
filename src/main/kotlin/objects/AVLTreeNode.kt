@@ -3,85 +3,71 @@ package at.fhv.objects
 class AVLTreeNode(
     override val value: Int,
 ): TreeNode {
-    override var left: AVLTreeNode? = null
-    override var right: AVLTreeNode? = null
+    private var leftNode: AVLNodeDetails? = null
+    private var rightNode: AVLNodeDetails? = null
 
-    private constructor(value: Int, left: AVLTreeNode?, right: AVLTreeNode?): this(value) {
-        this.left = left
-        this.right = right
+    override val left: AVLTreeNode?
+        get() = leftNode?.node
+    override val right: AVLTreeNode?
+        get() = rightNode?.node
+
+    private val height: Int
+        get() = maxOf(leftNode?.height ?: 0, rightNode?.height ?: 0) + 1
+
+    private constructor(value: Int, left: AVLNodeDetails?, right: AVLNodeDetails?): this(value) {
+        this.leftNode = left
+        this.rightNode = right
     }
 
     override fun insert(value: Int): AVLTreeNode =
-        _insert(value).balance().node
+        _insert(value).balance()
 
+    @Suppress("kotlin:S100", "FunctionName")
     private fun _insert(value: Int): AVLTreeNode {
         if (value < this.value) {
-            left?._insert(value) ?: run { left = AVLTreeNode(value) }
+            left?._insert(value) ?: run { leftNode = AVLNodeDetails(AVLTreeNode(value), 1)}
         } else {
-            right?._insert(value) ?: run { right = AVLTreeNode(value) }
+            right?._insert(value) ?: run { rightNode = AVLNodeDetails(AVLTreeNode(value), 1)}
         }
 
         return this
     }
 
-    override fun remove(value: Int): AVLTreeNode? =
-        _remove(value)?.balance()?.node
+    override fun remove(value: Int): AVLTreeNode =
+        throw NotImplementedError("Remove is not implemented for AVL trees.")
 
-    private fun _remove(value: Int): AVLTreeNode? {
-        if (value < this.value) {
-            left = left?.remove(value)
-        } else {
-            right = right?.remove(value)
-        }
+    private fun balance(): AVLTreeNode {
+        val leftNB = left?.balance()
+        val rightNB = right?.balance()
 
-        if (value == this.value) {
-            return when {
-                left == null -> right
-                right == null -> left
-                else -> {
-                    val successor = right?.min()!!
-                    AVLTreeNode(
-                        successor.value,
-                        left,
-                        right?._remove(successor.value)
-                    )
-                }
-            }
-        }
+        val balanceFactor = (leftNB?.height ?: 0) - (rightNB?.height ?: 0)
 
-        return this
-    }
+        val leftN = leftNB ?: AVLTreeNode(value)
+        val rightN = rightNB ?: AVLTreeNode(value)
 
-    private fun balance(): BalanceResult {
-        val balanceLeft = left?.balance() ?: BalanceResult(this)
-        val balanceRight = right?.balance() ?: BalanceResult(this)
-
-        val balanceFactor = balanceLeft.height - balanceRight.height
-
-        val root = when {
+        return when {
             balanceFactor > 1 -> {
-                if (balanceLeft.heightLeft >= balanceLeft.heightRight) {
-                    rightRotate(balanceLeft.node, balanceRight.node)
+                if ((leftNB?.leftNode?.height ?: 0) >= (leftNB?.rightNode?.height ?: 0)) {
+                    rightRotate(leftN, rightN)
                 } else {
-                    leftRotate(balanceLeft.node, balanceRight.node).rightRotate(balanceLeft.node, balanceRight.node)
+                    leftRotate(leftN, rightN).rightRotate(leftN, rightN)
                 }
             }
             balanceFactor < -1 -> {
-                if (balanceRight.heightRight >= balanceRight.heightLeft) {
-                    leftRotate(balanceLeft.node, balanceRight.node)
+                if ((rightNB?.rightNode?.height ?: 0) >= (rightNB?.leftNode?.height ?: 0)) {
+                    leftRotate(leftN, rightN)
                 } else {
-                    rightRotate(balanceLeft.node, balanceRight.node).leftRotate(balanceLeft.node, balanceRight.node)
+                    rightRotate(leftN, rightN).leftRotate(leftN, rightN)
                 }
             }
 
-            else -> this
-        }
+            else -> {
+                val left = if (leftNB != null ) AVLNodeDetails(leftNB, leftNB.height) else null
+                val right = if (rightNB != null) AVLNodeDetails(rightNB, rightNB.height) else null
 
-        return BalanceResult(
-            root,
-            balanceLeft.height + 1,
-            balanceRight.height + 1
-        )
+                AVLTreeNode(value, left, right)
+            }
+        }
     }
 
     override fun toString(): String {
@@ -90,25 +76,25 @@ class AVLTreeNode(
 
     private fun leftRotate(left: AVLTreeNode, right: AVLTreeNode): AVLTreeNode {
         val newRoot = right
-        val newLeft = AVLTreeNode(value, left.left, newRoot.left)
-        return AVLTreeNode(right.value, newLeft, newRoot.right)
+        val newLeft = AVLTreeNode(value, left.leftNode, newRoot.leftNode)
+        return AVLTreeNode(
+            right.value,
+            AVLNodeDetails(newLeft, newLeft.height),
+            newRoot.rightNode)
     }
 
     private fun rightRotate(left: AVLTreeNode, right: AVLTreeNode): AVLTreeNode {
         val newRoot = left
-        val newRight = AVLTreeNode(value, newRoot.right, right.right)
-        return AVLTreeNode(left.value, newRoot.left, newRight)
+        val newRight = AVLTreeNode(value, newRoot.rightNode, right.rightNode)
+        return AVLTreeNode(
+            left.value,
+            newRoot.leftNode,
+            AVLNodeDetails(newRight, newRight.height)
+        )
     }
 
-    private class BalanceResult(
+    private class AVLNodeDetails(
         val node: AVLTreeNode,
-        val heightLeft: Int = 0,
-        val heightRight: Int = 0,
-    ) {
-        val height: Int = maxOf(heightLeft, heightRight)
-
-        override fun toString(): String {
-            return "BalanceResult(node=$node, height=$height)"
-        }
-    }
+        val height: Int,
+    )
 }
