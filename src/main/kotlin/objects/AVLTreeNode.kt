@@ -70,10 +70,6 @@ class AVLTreeNode(
         }
     }
 
-    override fun toString(): String {
-        return "AVLTreeNode(value=$value)"
-    }
-
     private fun leftRotate(left: AVLTreeNode, right: AVLTreeNode): AVLTreeNode {
         val newRoot = right
         val newLeft = AVLTreeNode(value, left.leftNode, newRoot.leftNode)
@@ -91,6 +87,10 @@ class AVLTreeNode(
             newRoot.leftNode,
             AVLNodeDetails(newRight, newRight.height)
         )
+    }
+
+    override fun toString(): String {
+        return "AVLTreeNode(value=$value)"
     }
 
     private class AVLNodeDetails(
