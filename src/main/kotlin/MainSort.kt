@@ -9,6 +9,7 @@ fun main() {
 fun quickSort(arr: IntArray, low: Int = 0, high: Int = arr.size - 1, pivotType: PivotType = PivotType.FIRST_ELEMENT) {
     if (low < high) {
         val pi = partition(arr, low, high, pivotType)
+
         quickSort(arr, low, pi - 1, pivotType)
         quickSort(arr, pi + 1, high, pivotType)
     }
@@ -19,26 +20,23 @@ fun partition(arr: IntArray, low: Int, high: Int, pivotType: PivotType): Int {
         PivotType.FIRST_ELEMENT -> arr[low]
         PivotType.LAST_ELEMENT -> arr[high]
         PivotType.MIDDLE_ELEMENT -> arr[(low + high) / 2]
-        PivotType.RANDOM_ELEMENT -> (low..high).random()
+        PivotType.RANDOM_ELEMENT -> arr[(low..high).random()]
     }
 
     var i = low - 1
-    var j = low
-    while (j <= high - 1) {
+    for (j in low..<high) {
         if (arr[j] <= pivot) {
             i++
             swap(arr, i, j)
         }
-        j++
     }
+
     swap(arr, i + 1, high)
     return i + 1
 }
 
 fun swap(arr: IntArray, i: Int, j: Int) {
-    val temp = arr[i]
-    arr[i] = arr[j]
-    arr[j] = temp
+    arr[i] = arr[j].also { arr[j] = arr[i] }
 }
 
 enum class PivotType {
